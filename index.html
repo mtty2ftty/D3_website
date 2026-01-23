@@ -29,10 +29,63 @@ const radius = width / 7;
 const radiusOuterScale = 0.1;
 const threshVal = 5;
 
-// Import the JSON data
-var dataPath = 'https://raw.githubusercontent.com/mjm1169/D3_website/refs/heads/main/dummyHierarchy.json';
-d3.json(dataPath).then(function(data) {
-    const colors = ['#ff9900', '#ffcc00', '#ffff00', '#99ff99', '#dddddd'];
+const data = {
+  "name": "Company", "score": 52,
+  "children": [
+    {
+      "name": "HR", "score": 62,
+      "children": [
+        {
+          "name": "HR UK", "score": 62,
+          "children": [
+            {"name": "HR UK Men",  "score": 52,
+             "children": [
+              {"name": "HR UK Old Men", "value": 38, "score": 52},
+              {"name": "HR UK Young Men", "value": 30, "score": 71}
+            ]},
+            {"name": "HR UK Women", "value": 60, "score": 71}
+          ]
+        },
+        {
+          "name": "HR France", "score": 72,
+          "children": [
+            {"name": "HR France Men", "value": 43, "score": 83},
+            {"name": "HR France Women", "value": 65, "score": 59}
+          ]
+        },
+        {"name": "HR Germany", "value": 89, "score": 50}
+      ]
+    },
+    {
+      "name": "Finance", "score": 82,
+      "children": [
+        {"name": "Fin UK", "value": 68, "score": 97},
+        {"name": "Fin France", "value": 68, "score": 82,
+        "children": [
+          {"name": "Fin France Paris", "value": 100, "score": 97},
+          {"name": "Fin France Nice", "value": 20, "score": 82},
+          {"name": "Fin France Bordeaux", "value": 10, "score": 100}
+        ]},
+        {"name": "Fin Tuvalu", "value": 1, "score": 100},
+        {"name": "Fin Vanuatu", "value": 2, "score": 0}
+      ]
+    },
+    {"name": "Ops", "value": 190, "score": 52}
+  ]
+};
+
+// Specify the chart’s dimensions.
+
+// Function to calculate weighted average score
+//function weightedAverage(node) {
+//  if (!node.children) return node.score; // Return own score if no children
+//
+//  const weightedSum = node.children.reduce((sum, child) => sum + child.value * child.score, 0);
+//  const totalValue = node.children.reduce((sum, child) => sum + child.value, 0);
+//  return weightedSum / totalValue;
+//}
+
+const colors = ['#ff9900', '#ffcc00', '#ffff00', '#99ff99', '#dddddd'];
 const labels = ['Scores below 50', 'Scores 50-60', 'Scores 60-70', 'Scores above 70','Redacted'];
 
 // Create the color scale 
@@ -296,12 +349,13 @@ function computeMaxDepth(node) {
   }
   return Math.max(...node.children.map(computeMaxDepth));
 }
-}).catch(function(error){
-    console.log('Error loading the JSON file: ', error);
-});
 
-
-
+//function redactedValsTo_99(node) {
+//  if (node.data.value >= threshVal){
+//    return node.data.score
+//  }
+//  return -99
+//} 
 
 </script>
 </body>
