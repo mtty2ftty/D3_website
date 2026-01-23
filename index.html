@@ -160,7 +160,7 @@ const createDynamicHierarchy = (csvData) => {
 };
 
 // Example d3 loading with dynamic parsing
-d3.csv('C:\\Users\\Matty.Mason\\OneDrive - Ipsos\\D3js\\dummyHierarchy.csv').then(data => {
+d3.csv('https://raw.githubusercontent.com/mjm1169/D3_website/refs/heads/main/dummyHierarchy.csv').then(data => {
   const hierarchy = createDynamicHierarchy(data);
   // Use `hierarchyData` in your existing D3.js code for visualization consistency
 });
@@ -389,6 +389,7 @@ function computeMaxDepth(node) {
 </script>
 </body>
 </html>
+
 
 
 
