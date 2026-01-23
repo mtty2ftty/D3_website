@@ -1,0 +1,13 @@
+﻿Level0,Level1,Level2,Level3,Level4,Level5,Level6,Level7,Level8,Level9,Level10,score1,score2,value
+Company,,,,,,,,,,,70,80,1000
+Company,HR,,,,,,,,,,70,75,500
+Company,HR,HR UK,,,,,,,,,83,53,400
+Company,HR,HR UK,HR UK Men,,,,,,,,96,57,200
+Company,HR,HR UK,HR UK Men,HR UK Men Old,,,,,,,79,73,120
+Company,HR,HR UK,HR UK Men,HR UK Men Young,,,,,,,54,56,80
+Company,HR,HR UK,HR UK Women,,,,,,,,89,95,200
+Company,HR,HR France,,,,,,,,,57,74,100
+Company,Finance,,,,,,,,,,63,98,200
+Company,Finance,Finance UK,,,,,,,,,71,89,150
+Company,Finance,Finance France,,,,,,,,,76,86,50
+Company,Ops,,,,,,,,,,62,91,300
