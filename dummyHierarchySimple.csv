@@ -1,9 +1,10 @@
-﻿Level0,Level1,Level2,Level3,Level4,Level5,Level6,Level7,Level8,Level9,Level10,Score1,Score2,value,leaf
-Company,,,,,,,,,,,70,80,1000,0
-,HR,,,,,,,,,,70,75,500,1
-,,HR UK,,,,,,,,,77,55,100,1
-,,HR France,,,,,,,,,75,50,400,1
-,Finance,,,,,,,,,,63,98,200,1
-,Ops,,,,,,,,,,62,91,300,1
+﻿Level0,Level1,Level2,Level3,Level4,Level5,Level6,Level7,Level8,Level9,Level10,Score1,Score2,value
+Company,,,,,,,,,,,70,80,1000
+,HR,,,,,,,,,,70,75,500
+,,HR UK,,,,,,,,,77,55,100
+,,HR France,,,,,,,,,75,50,400
+,Finance,,,,,,,,,,63,98,200
+,Ops,,,,,,,,,,62,91,300
+
 
 
