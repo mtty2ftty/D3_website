@@ -34,7 +34,7 @@ const threshVal = 5;
 
 // Load the CSV file
 fetch(
-  'https://raw.githubusercontent.com/mjm1169/D3_website/refs/heads/main/dummyHierarchyComplexFilled.csv',
+  'https://raw.githubusercontent.com/mtty2ftty/D3_website/refs/heads/main/dummyHierarchyComplexFilled.csv',
 )
   .then((response) => response.text())
   .then((text) => {
@@ -394,7 +394,7 @@ removeValuesFromParents(rootNode);
         );
     }
     // Load the CSV file and update the dropdown
-fetch('https://raw.githubusercontent.com/mtty2ftty/D3_website/refs/heads/main/dummyHierarchyComplexFilled.csv')
+fetch('https://raw.githubusercontent.com/mjm1169/D3_website/refs/heads/main/qText.csv')    
     .then(response => response.text())
     .then(text => {
         const data = d3.csvParse(text);
