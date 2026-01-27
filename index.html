@@ -40,44 +40,63 @@ fetch(
   .then((text) => {
     const data = d3.csvParse(text);
 
-    // Function to find or create a node
-    function getNode(parent, name) {
-      if (!parent.children) {
-        parent.children = [];
+// Function to find or create a node
+function getNode(parent, name) {
+  if (!parent.children) {
+    parent.children = [];
+  }
+  let node = parent.children.find((child) => child.name === name);
+  if (!node) {
+    node = { name, children: [], scores: {}, value: undefined };
+    parent.children.push(node);
+  }
+  return node;
+}
+
+// Initialize the root node
+const rootNode = { name: 'Company', children: [], scores: {}, value: undefined };
+// Process the company scores directly from the first row
+const firstRow = data[0];
+Object.keys(firstRow)
+  .filter((k) => k.startsWith('Score'))
+  .forEach((k) => {
+    rootNode.scores[k] = +firstRow[k] || 0;
+  });
+// Processing each data row
+let nowNode = rootNode;
+data.forEach((row, index) => {
+  let isFirstLevel = true; // Track if it is the first level
+  for (let i = 1; i <= 10; i++) { // Start at Level1
+    const levelName = row[`Level${i}`];
+    if (levelName && levelName.trim()) {
+      nowNode = getNode(nowNode, levelName);
+      Object.keys(row)
+        .filter((k) => k.startsWith('Score'))
+        .forEach((k) => {
+          nowNode.scores[k] = +row[k] || 0;
+        });
+
+      // Set 'value' only if 'size' is not blank
+      if (row['size'] && row['size'].trim() !== '') {
+        nowNode.value = +row['size'];
       }
-      let node = parent.children.find((child) => child.name === name);
-      if (!node) {
-        node = { name, children: [], scores: {} };
-        parent.children.push(node);
-      }
-      return node;
+
+      isFirstLevel = false; // Update as no longer first level
     }
+  }
+  // Reset currentNode to root for the next data row
+  nowNode = rootNode;
+});
 
-    // Initialize the root node
-    const rootNode = { name: 'Company', children: [], scores: {} };
+function removeValuesFromParents(node) {
+  if (node.children && node.children.length > 0) {
+    node.value = undefined;
+    node.children.forEach(removeValuesFromParents);
+  }
+}
 
-    // Ensure scores for the 'Company' node
-    data.forEach((row, index) => {
-      if (index === 0) {
-        Object.keys(row)
-          .filter((k) => k.startsWith('Score') || k === 'value')
-          .forEach((k) => {
-            rootNode.scores[k] = +row[k] || 0;
-          });
-      }
-      let currentNode = rootNode;
-      for (let i = 1; i <= 10; i++) {
-        const levelName = row[`Level${i}`];
-        if (levelName && levelName.trim()) {
-          currentNode = getNode(currentNode, levelName);
-          Object.keys(row)
-            .filter((k) => k.startsWith('Score') || k === 'value')
-            .forEach((k) => {
-              currentNode.scores[k] = +row[k] || 0;
-            });
-        }
-      }
-    });
+removeValuesFromParents(rootNode);
+
 
     const colors = ['#ff9900', '#ffcc00', '#ffff00', '#99ff99', '#dddddd'];
     const labels = [
@@ -94,10 +113,16 @@ fetch(
       .range([colors[0], colors[1], colors[2], colors[3]]);
     //console.log(rootNode)
 
-    const hierarchy = d3.hierarchy(rootNode).sum((d) => d.scores['value'] || 0);
-    //.sort((a, b) => (b.scores['value'] || 0) - (a.scores['value'] || 0))
+    //const hierarchy = d3.hierarchy(rootNode);
+    //hierarchy.eachAfter((n) => aggregateUniqueValues(n));
+   
+    // Use 'uniqueValue' to define segment sizes
+    //hierarchy.sum((d) => d.data.scores['uniqueValue'] || 0);
 
-    console.log(hierarchy);
+    const hierarchy = d3.hierarchy(rootNode).sum((d) => d.value|| 0 )
+    //.sort((a, b) => (b.scores['value'] || 0) - (a.scores['value'] || 0));
+
+    console.log(rootNode);
 
     const root = d3.partition().size([2 * Math.PI, hierarchy.height + 1])(
       hierarchy,
@@ -149,7 +174,7 @@ fetch(
       .selectAll('path')
       .data(rootPartition.descendants())
       .join('path')
-      .attr('fill-opacity', (d) => Math.max(0, 1 - d.depth * 0.2))
+      .attr('fill-opacity', (d) => Math.max(0, 1 - d.depth * 0.1))
       .attr('fill', (d) =>
         d.data.scores.value < 5
           ? colors[4]
@@ -394,6 +419,15 @@ fetch('https://raw.githubusercontent.com/mjm1169/D3_website/refs/heads/main/qTex
             updateChart(selectedScore);
         });
     });
+    function aggregateUniqueValues(node) {
+    if (!node.children || node.children.length === 0) {
+        return node.data.scores['value'] || 0;
+    }
+    node.data.scores['uniqueValue'] = node.children.reduce((acc, child) => {
+        return acc + aggregateUniqueValues(child);
+    }, 0);
+    return node.data.scores['uniqueValue'];
+    }
     function updateChart(selectedScore, node = currentNode) {
       const newColorScale = d3
         .scaleThreshold()
@@ -429,7 +463,6 @@ fetch('https://raw.githubusercontent.com/mjm1169/D3_website/refs/heads/main/qTex
   .catch(function (error) {
     console.log('Error loading the CSV data: ', error);
   });
-
 </script>
 </body>
 </html>
