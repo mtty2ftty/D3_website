@@ -2,7 +2,7 @@
 <html>
 <style>
    body {
-      font-family: 'Arial', sans-serif; /* General font for HTML */
+      font-family: 'Arial', sans-serif;
    }
 </style>
 
@@ -12,14 +12,17 @@
 </head>
 <body>
     <h1>Interactive ONS radial chart</h1>
-    <p>This visualization represents a hierachy. Each segment is sized in proportion to the number of responses that comprise it and are colour-coded by their score.</p>
-    <p>Segments further down the hierarchy can be clicked to explore the data further.</p>
+    <p>This visualization represents a hierarchy, with each segment sized proportionally to its value and color-coded by score.</p>
+    <p>Segments further down the hierarchy can be clicked to explore the data.</p>
     <div id="chart"></div>
+    
+<select id="scoreSelector">
+    <option value="Score1">Score1</option>
+    <option value="Score2">Score2</option>
+</select>
 
-<!-- Load d3.js -->
 <script src="https://d3js.org/d3.v6.js"></script>
 
-<!-- Create a div where the graph will take place -->
 <div id="my_dataviz"></div>
 
 <script>
@@ -29,282 +32,404 @@ const radius = width / 7;
 const radiusOuterScale = 0.1;
 const threshVal = 5;
 
-// Import the JSON data
-var dataPath = 'https://raw.githubusercontent.com/mjm1169/D3_website/refs/heads/main/dummyHierarchy.json';
-d3.json(dataPath).then(function(data) {
-    const colors = ['#ff9900', '#ffcc00', '#ffff00', '#99ff99', '#dddddd'];
-const labels = ['Scores below 50', 'Scores 50-60', 'Scores 60-70', 'Scores above 70','Redacted'];
+// Load the CSV file
+fetch(
+  'https://raw.githubusercontent.com/mjm1169/D3_website/refs/heads/main/dummyHierarchyComplexFilled.csv',
+)
+  .then((response) => response.text())
+  .then((text) => {
+    const data = d3.csvParse(text);
 
-// Create the color scale 
-const colorScale = d3.scaleThreshold()
-  .domain([50, 60, 70, 100]) // Define score thresholds
-  .range([
-    //colors[4], // redacted
-    colors[0], // Light Red (for scores below 60)
-    colors[1], // Light Orange (for scores 50-60)
-    colors[2], // Light Yellow (for scores 60-70)
-    colors[3],  // Light Green (for scores above 70)
-  ]);
-  
-
-
-// Compute the layout.
-const hierarchy = d3.hierarchy(data)
-    .sum(d => d.value)
-    .sort((a, b) => b.value - a.value);
-    
-const root = d3.partition()
-    .size([2 * Math.PI, hierarchy.height + 1])
-  (hierarchy);
-root.each(d => d.current = d);
-
-//hierarchy.each(node => {
-//if (node.children) { // Only apply to parent nodes
-//  node.data.color = colorScale(weightedAverage(node)); // Store color in node.data
-//} else {
-//  node.data.color = colorScale(node.data.score); // Keep original color for leaf nodes
-//}
-//
-//});
-
-hierarchy.each(node => {
-  node.data.color = colorScale(node.data.score); // Keep original color for leaf nodes
-});
-
-const maxDepth = d3.max(root.descendants(), d => d.depth);
-const hiddenLevels = maxDepth - 2;
-//const radiusIncrement = 50;
-
-
-
-// Create the arc generator.
-const arc = d3.arc()
-    .startAngle(d => d.x0)
-    .endAngle(d => d.x1)
-    .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
-    .padRadius(radius * 1.5)
-    .innerRadius(d => d.y0 <=3 ? d.y0 * radius : (3 + (d.y0-3)*radiusOuterScale)*radius)
-    .outerRadius(d => d.y1 <=3 ? d.y1 * radius : (3 + (d.y1-3)*radiusOuterScale)*radius)
-
-// Create the SVG container.
-const svg = d3.select("body").append("svg")
-.attr("width", width)
-.attr("height", height)
-.append("g")
-.attr("transform", `translate(${width / 2},${height / 2})`)
-.attr("viewBox", [-width / 2, -height / 2, width, width])
-    .style("font", "10px sans-serif");;
-
-//// Create outer rings
-//for (let i = 1; i <= hiddenLevels; i++) {
-//svg.append('path')
-//  .attr('class', 'background-circle') 
-//  .attr('d', d3.arc().innerRadius(radius*3).outerRadius(radius*3+5*i).startAngle(0).endAngle(2 * Math.PI))
-//  .style('fill', '#dddddd')
-//  .style('fill-opacity', '0.5');
-//}
-
-// Example assuming root is your data node for the center
-const centerCircle = svg.append('circle')
-  .attr('r', radius) // Set your desired radius
-  .attr('fill', colorScale(root.data.score)); // Use colorScale on root node's data attribute
-
-
-// Append the arcs.
-const path = svg.append("g")
-  .selectAll("path")
-  .data(root.descendants())
-  .join("path")
-  .attr('fill-opacity', d => Math.max(0,1 - (d.depth * 0.2 )))
-  .attr("fill", d => { 
-    if(d.data.value < 5) {
-      return colors[4]; // Grey for values less than 5
-    } else {
-      return d.children ? d.data.color : colorScale(d.data.score); // Original color logic
+    // Function to find or create a node
+    function getNode(parent, name) {
+      if (!parent.children) {
+        parent.children = [];
+      }
+      let node = parent.children.find((child) => child.name === name);
+      if (!node) {
+        node = { name, children: [], scores: {} };
+        parent.children.push(node);
+      }
+      return node;
     }
-  }) 
-  .attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
-  .attr("d", d => arc(d.current));
 
-// Make them clickable if they have children.
-path.filter(d => d.children)
-    .style("cursor", "pointer")
-    .on("click", clicked);
+    // Initialize the root node
+    const rootNode = { name: 'Company', children: [], scores: {} };
 
-const format = d3.format(",d");
-path.append("title")
-    .text(d => `${d.ancestors().map(d => d.data.name).reverse().join("/")}\n${format(d.value)}`);
+    // Ensure scores for the 'Company' node
+    data.forEach((row, index) => {
+      if (index === 0) {
+        Object.keys(row)
+          .filter((k) => k.startsWith('Score') || k === 'value')
+          .forEach((k) => {
+            rootNode.scores[k] = +row[k] || 0;
+          });
+      }
+      let currentNode = rootNode;
+      for (let i = 1; i <= 10; i++) {
+        const levelName = row[`Level${i}`];
+        if (levelName && levelName.trim()) {
+          currentNode = getNode(currentNode, levelName);
+          Object.keys(row)
+            .filter((k) => k.startsWith('Score') || k === 'value')
+            .forEach((k) => {
+              currentNode.scores[k] = +row[k] || 0;
+            });
+        }
+      }
+    });
 
-const centerText = svg.append('text')
-  .attr('text-anchor', 'middle')
-  .attr('dy', '0.35em')
-  .style('fill', 'black')
-  .text(`${data.name}: ${data.score}%`);
+    const colors = ['#ff9900', '#ffcc00', '#ffff00', '#99ff99', '#dddddd'];
+    const labels = [
+      'Scores below 50',
+      'Scores 50-60',
+      'Scores 60-70',
+      'Scores above 70',
+      'Redacted',
+    ];
 
-const label = svg.append("g")
-    .attr("pointer-events", "none")
-    .attr("text-anchor", "middle")
-    .style("user-select", "none")
-  .selectAll("text")
-  .data(root.descendants())
-  .join("text")
-    .attr("dy", "0.35em")
-    .attr("fill-opacity", d => +labelVisible(d.current))
-    .attr("transform", d => labelTransform(d.current))
-    .text(d => d.value > threshVal ? d.data.name +": " +d.data.score + "%" : d.data.name +": Redacted");
+    const colorScale = d3
+      .scaleThreshold()
+      .domain([50, 60, 70, 100])
+      .range([colors[0], colors[1], colors[2], colors[3]]);
+    //console.log(rootNode)
 
-const parent = svg.append("circle")
-    .datum(root)
-    .attr("r", radius)
-    .attr("fill", "none")
-    .attr("pointer-events", "all")
-    .on("click", clicked);
-    
-//
-const currentLevelsText = svg.append('text')
-.attr('id', 'currentLevels')
-.attr('x', 0) // Position based on your design
-.attr('y', -height / 2 + 20) // Adjust position as needed
-.style('text-anchor', 'middle')
-.text('Currently showing levels 1 to 3');
+    const hierarchy = d3.hierarchy(rootNode).sum((d) => d.scores['value'] || 0);
+    //.sort((a, b) => (b.scores['value'] || 0) - (a.scores['value'] || 0))
 
-//test
-//svg.append('text')
-//.attr('x', 50)  // X-coordinate
-//.attr('y', 50)  // Y-coordinate
-//.text("hid: "  + hiddenLevels + " max: "+maxDepth)  // Variable text
-//.style('font-size', '16px')  // Optional styling
-//.style('fill', 'black');  // Optional text color
+    console.log(hierarchy);
 
-const legend = svg.append('g')
-  .attr('class', 'legend')
-  .attr('transform', `translate(${-width/2+20}, ${-height/2+20})`)
-  .raise();
+    const root = d3.partition().size([2 * Math.PI, hierarchy.height + 1])(
+      hierarchy,
+    );
+    root.each((d) => (d.current = d));
 
-colors.forEach((color, i) => {
-  
-  legend.append('rect')
-    .attr('x', 0)
-    .attr('y', i * 20)
-    .attr('width', 18)
-    .attr('height', 18)
-    .style('fill', color);
+    const rootPartition = d3
+      .partition()
+      .size([2 * Math.PI, hierarchy.height + 1])(hierarchy);
 
-  legend.append('text')
-    .attr('x', 24)
-    .attr('y', i * 20 + 9)
-    .attr('dy', '0.35em')
-    .style('text-anchor', 'start')
-    .text(labels[i]);
+    rootPartition.each((d) => (d.current = d));
+
+    const maxDepth = d3.max(rootPartition.descendants(), (d) => d.depth);
+    const hiddenLevels = maxDepth - 2;
+
+    const arc = d3
+      .arc()
+      .startAngle((d) => d.x0)
+      .endAngle((d) => d.x1)
+      .padAngle((d) => Math.min((d.x1 - d.x0) / 2, 0.005))
+      .padRadius(radius * 1.5)
+      .innerRadius((d) =>
+        d.y0 <= 3
+          ? d.y0 * radius
+          : (3 + (d.y0 - 3) * radiusOuterScale) * radius,
+      )
+      .outerRadius((d) =>
+        d.y1 <= 3
+          ? d.y1 * radius
+          : (3 + (d.y1 - 3) * radiusOuterScale) * radius,
+      );
+
+    const svg = d3
+      .select('body')
+      .append('svg')
+      .attr('width', width)
+      .attr('height', height)
+      .append('g')
+      .attr('transform', `translate(${width / 2},${height / 2})`)
+      .style('font', '10px sans-serif');
+
+    const centerCircle = svg
+      .append('circle')
+      .attr('r', radius)
+      .attr('fill', colorScale(root.data.scores.Score1 || 0));
+
+    const path = svg
+      .append('g')
+      .selectAll('path')
+      .data(rootPartition.descendants())
+      .join('path')
+      .attr('fill-opacity', (d) => Math.max(0, 1 - d.depth * 0.2))
+      .attr('fill', (d) =>
+        d.data.scores.value < 5
+          ? colors[4]
+          : colorScale(d.data.scores.Score1 || 0),
+      )
+      .attr('pointer-events', (d) => (arcVisible(d.current) ? 'auto' : 'none'))
+      .attr('d', (d) => arc(d.current));
+
+    path
+      .filter((d) => d.children)
+      .style('cursor', 'pointer')
+      .on('click', clicked);
+
+    const format = d3.format(',d');
+    path.append('title').text(
+      (d) =>
+        `${d
+          .ancestors()
+          .map((d) => d.data.name)
+          .reverse()
+          .join('/')}\n${format(d.value)}`,
+    );
+
+    const centerText = svg
+      .append('text')
+      .attr('text-anchor', 'middle')
+      .attr('dy', '0.35em')
+      .style('fill', 'black')
+      .text(`${root.data.name}: ${root.data.scores.Score1 || 0}%`);
+
+    const label = svg
+      .append('g')
+      .attr('id', 'scoresLabels')
+      .attr('pointer-events', 'none')
+      .attr('text-anchor', 'middle')
+      .style('user-select', 'none')
+      .selectAll('text')
+      .data(rootPartition.descendants())
+      .join('text')
+      .attr('dy', '0.35em')
+      .attr('fill-opacity', (d) => +labelVisible(d.current))
+      .attr('transform', (d) => labelTransform(d.current))
+      .text((d) =>
+        d.data.scores.value > threshVal
+          ? `${d.data.name}: ${d.data.scores.Score1 || 0}%`
+          : `${d.data.name}: Redacted`,
+      );
+
+    const parent = svg
+      .append('circle')
+      .datum(root)
+      .attr('r', radius)
+      .attr('fill', 'none')
+      .attr('pointer-events', 'all')
+      .on('click', clicked);
+
+    const currentLevelsText = svg
+      .append('text')
+      .attr('id', 'currentLevels')
+      .attr('x', 0)
+      .attr('y', -height / 2 + 20)
+      .style('text-anchor', 'middle')
+      .text('Currently showing levels 1 to 3');
+
+    const legend = svg
+      .append('g')
+      .attr('class', 'legend')
+      .attr('transform', `translate(${-width / 2 + 20}, ${-height / 2 + 20})`)
+      .raise();
+
+    colors.forEach((color, i) => {
+      legend
+        .append('rect')
+        .attr('x', 0)
+        .attr('y', i * 20)
+        .attr('width', 18)
+        .attr('height', 18)
+        .style('fill', color);
+
+      legend
+        .append('text')
+        .attr('x', 24)
+        .attr('y', i * 20 + 9)
+        .attr('dy', '0.35em')
+        .style('text-anchor', 'start')
+        .text(labels[i]);
+    });
+
+    function clicked(event, p) {
+
+      currentNode = p; // Update the reference to the current node
+    parent.datum(p.parent || root);
+    updateChart(d3.select('#scoreSelector').property('value'), p);
+      updateCurrentLevelsText(p);
+      //svg.selectAll('path.background-circle').remove();
+
+      rootPartition.each(
+        (d) =>
+          (d.target = {
+            x0:
+              Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) *
+              2 *
+              Math.PI,
+            x1:
+              Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) *
+              2 *
+              Math.PI,
+            y0: Math.max(0, d.y0 - p.depth),
+            y1: Math.max(0, d.y1 - p.depth),
+          }),
+      );
+
+      const currentSelScore = d3.select('#scoreSelector').property('value');
+      console.log(currentSelScore); // Log the current selected value
+      //centerText.raise();
+      centerText.text(
+        `${p.data.name}: ${p.data.scores[currentSelScore] || 0}%`,
+      );
+
+      const t = svg.transition().duration(750);
+
+      path
+        .transition(t)
+        .tween('data', (d) => {
+          const i = d3.interpolate(d.current, d.target);
+          return (t) => (d.current = i(t));
+        })
+        .filter(function (d) {
+          return +this.getAttribute('fill-opacity') || arcVisible(d.target);
+        })
+        .attr('pointer-events', (d) => (arcVisible(d.target) ? 'auto' : 'none'))
+        .attrTween('d', (d) => () => arc(d.current));
+
+      label
+        .filter(function (d) {
+          return +this.getAttribute('fill-opacity') || labelVisible(d.target);
+        })
+        .transition(t)
+        .attr('fill-opacity', (d) => +labelVisible(d.target))
+        .attrTween('transform', (d) => () => labelTransform(d.current));
+    }
+
+    const scoreSelector = document.getElementById('scoreSelector');
+
+    scoreSelector.addEventListener('change', function () {
+      const selectedScore = this.value;
+      updateChart(selectedScore);
+    });
+
+    let currentNode = root; // Initialize to root node
+
+    updateChart('Score1'); // Default initialization with Score1
+
+    function arcVisible(d) {
+      return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0;
+    }
+
+    function labelVisible(d) {
+      return d.y1 <= 3 && d.y0 >= 1 && (d.y1 - d.y0) * (d.x1 - d.x0) > 0.03;
+    }
+
+    function labelTransform(d) {
+      const x = (((d.x0 + d.x1) / 2) * 180) / Math.PI;
+      const y = ((d.y0 + d.y1) / 2) * radius;
+      return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+    }
+
+    function updateCurrentLevelsText(p) {
+      const currentDepth = p.depth;
+      const visibleMaxDepth = computeMaxDepth(p);
+      const visibleLevels = Math.min(visibleMaxDepth, currentDepth + 2);
+      const textContent =
+        currentDepth === visibleLevels
+          ? `Currently showing level ${currentDepth + 1}`
+          : `Currently showing levels ${currentDepth + 1} to ${visibleLevels + 1}`;
+      //const textContent = `Current score: ${p.data.scores.Score1 || 0}`;
+
+      d3.select('#currentLevels').text(textContent);
+    }
+
+    function computeMaxDepth(node) {
+      if (!node.children || node.children.length === 0) {
+        return node.depth;
+      }
+      return Math.max(...node.children.map(computeMaxDepth));
+    }
+
+    function updateChartx(selectedScore) {
+      const newColorScale = d3
+        .scaleThreshold()
+        .domain([50, 60, 70, 100])
+        .range([colors[0], colors[1], colors[2], colors[3]]);
+
+      // Update color of each arc and center circle
+      path
+        .transition()
+        .duration(750)
+        .attr('fill', (d) => newColorScale(d.data.scores[selectedScore] || 0));
+
+      //centerCircle.transition().duration(750)
+      //   .attr('fill', d => newColorScale(d.data.scores[selectedScore] || 0));
+
+      centerText.text(
+        `${root.data.name}: ${root.data.scores[selectedScore] || 0}%`,
+      );
+
+      // Update labels
+      label
+        .transition()
+        .duration(750)
+        .attr('fill-opacity', (d) => +labelVisible(d.current))
+        .attr('transform', (d) => labelTransform(d.current))
+        .text((d) =>
+          d.data.scores[selectedScore] > threshVal
+            ? `${d.data.name}: ${d.data.scores[selectedScore] || 0}%`
+            : `${d.data.name}: Redacted`,
+        );
+    }
+    // Load the CSV file and update the dropdown
+fetch('https://raw.githubusercontent.com/mjm1169/D3_website/refs/heads/main/qText.csv')
+    .then(response => response.text())
+    .then(text => {
+        const data = d3.csvParse(text);
+        const dropdown = d3.select('#scoreSelector');
+
+        // Clear any existing options
+        dropdown.selectAll('option').remove();
+
+        // Append options from the CSV data
+        data.forEach(d => {
+            dropdown.append('option')
+                .attr('value', d.QID)
+                .text(d.Qtext);
+        });
+
+        // Set default selection to Score1
+        dropdown.property('value', 'Score1');
+
+        // Redefine update logic using selected QID
+        dropdown.on('change', function() {
+            const selectedScore = this.value;
+            updateChart(selectedScore);
+        });
+    });
+    function updateChart(selectedScore, node = currentNode) {
+      const newColorScale = d3
+        .scaleThreshold()
+        .domain([50, 60, 70, 100])
+        .range([colors[0], colors[1], colors[2], colors[3]]);
+
+      path
+        .transition()
+        .duration(750)
+        .attr('fill', (d) => newColorScale(d.data.scores[selectedScore] || 0));
+
+      centerCircle
+        .transition()
+        .duration(750)
+        .attr('fill', newColorScale(node.data.scores[selectedScore] || 0));
+
+      centerText.text(
+        `${node.data.name}: ${node.data.scores[selectedScore] || 0}%`,
+      );
+
+      label
+        .data(rootPartition.descendants())
+        .transition()
+        .duration(750)
+        .attr('transform', (d) => labelTransform(d.current))
+        .text((d) =>
+          d.data.scores[selectedScore] > threshVal
+            ? `${d.data.name}: ${d.data.scores[selectedScore] || 0}%`
+            : `${d.data.name}: Redacted`,
+        );
+    }
+  })
+  .catch(function (error) {
+    console.log('Error loading the CSV data: ', error);
   });
-
-// Handle zoom on click.
-function clicked(event, p) {
-  parent.datum(p.parent || root);
-  updateCurrentLevelsText(p); 
-  // background circles
-  svg.selectAll('path.background-circle').remove();
-  
-  ////add new background circles
-  //const newHiddenLevels = maxDepth - (p.depth + 2);
-  //for (let i = 1; i <= newHiddenLevels; i++) {
-  //  svg.append('path')
-  //    .attr('class', 'background-circle')
-  //    .attr('d', d3.arc().innerRadius(radius * 3).outerRadius(radius * 3 + 5 * i).startAngle(0).endAngle(2 * Math.PI))
- //     .style('fill', '#dddddd')
-//      .style('fill-opacity', '0.5');
-//};
-
-  root.each(d => d.target = {
-    x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
-    x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
-    y0: Math.max(0, d.y0 - p.depth),
-    y1: Math.max(0, d.y1 - p.depth)
-  });
-  
-  // Update the center circle text upon clicking a segment
-  parent.transition().duration(750).attr('fill', p.data.color);
-  
-  centerText.raise();
-  centerText.text(`${p.data.name}: ${p.data.score}%`); 
-  
-  const t = svg.transition().duration(750);
-
-  // Transition the data on all arcs, even the ones that aren’t visible,
-  // so that if this transition is interrupted, entering arcs will start
-  // the next transition from the desired position.
-  path.transition(t)
-      .tween("data", d => {
-        const i = d3.interpolate(d.current, d.target);
-        return t => d.current = i(t);
-      })
-    .filter(function(d) {
-      return +this.getAttribute("fill-opacity") || arcVisible(d.target);
-    })
-    .attr("pointer-events", d => arcVisible(d.target) ? "auto" : "none") 
-      .attrTween("d", d => () => arc(d.current));
-      //.attr('fill-opacity', d => {
-      //switch (d.depth - p.depth) {
-      //  case 0:
-      //    return 1; // Full opacity for center
-      //  case 1:
-      //    return 0.6; // Less opacity for first level
-      //  case 2:
-      //    return 0.2; // More faded for second level
-      //  default:
-      //    return 0; // Even more faded for deeper levels
-      //}
-    //})
-      
-
-  label.filter(function(d) {
-      return +this.getAttribute("fill-opacity") || labelVisible(d.target);
-    }).transition(t)
-      .attr("fill-opacity", d => +labelVisible(d.target))
-      .attrTween("transform", d => () => labelTransform(d.current));
-}
-
-function arcVisible(d) {
-  return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0;
-}
-
-function labelVisible(d) {
-  return d.y1 <= 3 && d.y0 >= 1 && (d.y1 - d.y0) * (d.x1 - d.x0) > 0.03;
-}
-
-function labelTransform(d) {
-  const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
-  const y = (d.y0 + d.y1) / 2 * radius;
-  return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
-}
-
-function updateCurrentLevelsText(p) {
-  const currentDepth = p.depth;
-  const visibleMaxDepth = computeMaxDepth(p); // Calculate maximum depth dynamically
-  const visibleLevels = Math.min(visibleMaxDepth, currentDepth + 2); 
-  const textContent = currentDepth === visibleLevels ? 
-      `Currently showing level ${currentDepth+1}` : 
-      `Currently showing levels ${currentDepth+1} to ${visibleLevels+1}`;
-
-  d3.select("#currentLevels").text(textContent);
-}
-
-
-function computeMaxDepth(node) {
-  if (!node.children || node.children.length === 0) {
-      return node.depth;
-  }
-  return Math.max(...node.children.map(computeMaxDepth));
-}
-}).catch(function(error){
-    console.log('Error loading the JSON file: ', error);
-});
-
-
-
 
 </script>
 </body>
 </html>
-
-
