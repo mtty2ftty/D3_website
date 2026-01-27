@@ -1,4 +1,4 @@
-﻿Level0,Level1,Level2,Level3,Level4,Level5,Level6,Level7,Level8,Level9,Level10,Score1,Score2,Score3,Score4,value
+﻿Level0,Level1,Level2,Level3,Level4,Level5,Level6,Level7,Level8,Level9,Level10,Score1,Score2,Score3,Score4,size
 NHS,,,,,,,,,,,81,48,48,66,10000
 NHS,NHS England,,,,,,,,,,56,61,88,60,9000
 NHS,NHS England,Region1,,,,,,,,,45,42,84,79,5000
@@ -37,4 +37,5 @@ NHS,Other,,,,,,,,,,59,96,49,55,1000
 NHS,Other,Placeholder1,,,,,,,,,100,48,84,59,400
 NHS,Other,Placeholder2,,,,,,,,,88,81,57,53,300
 NHS,Other,Placeholder3,,,,,,,,,65,43,91,67,300
+
 
