@@ -97,8 +97,14 @@ function removeValuesFromParents(node) {
 
 removeValuesFromParents(rootNode);
 
-
-    const colors = ['#ff9900', '#ffcc00', '#ffff00', '#99ff99', '#dddddd'];
+        
+    const colors = 
+    [
+        "#7A7E9F", // <50
+        "#8B8EA1", // 50-59
+        "#E7E8EE", // 60-69
+        "#69A8A8"  // >=70
+    ];
     const labels = [
       'Scores below 50',
       'Scores 50-60',
