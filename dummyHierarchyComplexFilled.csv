@@ -34,6 +34,7 @@ NHS,NHS England,Region4,,,,,,,,,73,87,70,70,500
 NHS,NHS England,Region4,Trust19,,,,,,,,87,74,44,60,300
 NHS,NHS England,Region4,Trust20,,,,,,,,87,63,48,90,200
 NHS,Other,,,,,,,,,,59,96,49,55,1000
-NHS,Other,Placeholder1,,,,,,,,,100,48,84,59,
-NHS,Other,Placeholder2,,,,,,,,,88,81,57,53,
-NHS,Other,Placeholder3,,,,,,,,,65,43,91,67,
+NHS,Other,Placeholder1,,,,,,,,,100,48,84,59,400
+NHS,Other,Placeholder2,,,,,,,,,88,81,57,53,300
+NHS,Other,Placeholder3,,,,,,,,,65,43,91,67,300
+
