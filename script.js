@@ -1,9 +1,24 @@
-const width = 1000;
-const height = 1000;
-const radius = width / 7;
+// Responsive sizing based on the chart pane + viewport
+function getChartSize() {
+  const pane = document.querySelector('.chart-pane');
+  const rect = pane ? pane.getBoundingClientRect() : { width: window.innerWidth, height: window.innerHeight };
+  // Square that fits inside the pane, capped at 90% of viewport height
+  return Math.max(320, Math.floor(Math.min(rect.width, window.innerHeight * 0.9)));
+}
+
+let width = getChartSize();
+let height = width;
+let radius = width / 7;
+
 const radiusOuterScale = 0.1;
 const threshVal = 5;
 
+// Re-render on resize (simple + reliable for this demo)
+let __resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(__resizeTimer);
+  __resizeTimer = setTimeout(() => window.location.reload(), 200);
+});
 // Load the CSV file
 fetch(
   'https://raw.githubusercontent.com/mtty2ftty/D3_website/refs/heads/main/dummyHierarchyComplexFilled.csv',
@@ -85,6 +100,20 @@ removeValuesFromParents(rootNode);
       'Redacted',
     ];
 
+// Render legend into the chart overlay (top-left of chart pane)
+(function renderOverlayLegend() {
+  const legendEl = document.getElementById('chartLegend');
+  if (!legendEl) return;
+
+  const items = colors.map((c, i) => ({ color: c, label: labels[i] })).filter(d => d.label);
+  legendEl.innerHTML = items.map(d =>
+    `<div class="chart-legend-item">
+       <span class="chart-legend-swatch" style="background:${d.color}"></span>
+       <span class="chart-legend-label">${d.label}</span>
+     </div>`
+  ).join('');
+})();
+
     const colorScale = d3
       .scaleThreshold()
       .domain([50, 60, 70, 100])
@@ -138,6 +167,11 @@ removeValuesFromParents(rootNode);
       .append('svg')
       .attr('width', width)
       .attr('height', height)
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('preserveAspectRatio', 'xMidYMid meet')
+      // Scale SVG typography with the rendered chart size (labels stay proportional)
+      .style('font-size', `${(14 * (width / 1000)).toFixed(2)}px`)
+      .style('overflow', 'hidden')
       .append('g')
       .attr('transform', `translate(${width / 2},${height / 2})`)
       .style('font', '10px sans-serif');
@@ -208,38 +242,6 @@ removeValuesFromParents(rootNode);
       .attr('fill', 'none')
       .attr('pointer-events', 'all')
       .on('click', clicked);
-
-    const currentLevelsText = svg
-      .append('text')
-      .attr('id', 'currentLevels')
-      .attr('x', 0)
-      .attr('y', -height / 2 + 20)
-      .style('text-anchor', 'middle')
-      .text('Currently showing levels 1 to 3');
-
-    const legend = svg
-      .append('g')
-      .attr('class', 'legend')
-      .attr('transform', `translate(${-width / 2 + 20}, ${-height / 2 + 20})`)
-      .raise();
-
-    colors.forEach((color, i) => {
-      legend
-        .append('rect')
-        .attr('x', 0)
-        .attr('y', i * 20)
-        .attr('width', 18)
-        .attr('height', 18)
-        .style('fill', color);
-
-      legend
-        .append('text')
-        .attr('x', 24)
-        .attr('y', i * 20 + 9)
-        .attr('dy', '0.35em')
-        .style('text-anchor', 'start')
-        .text(labels[i]);
-    });
 
     function clicked(event, p) {
 
@@ -330,7 +332,8 @@ removeValuesFromParents(rootNode);
           : `Currently showing levels ${currentDepth + 1} to ${visibleLevels + 1}`;
       //const textContent = `Current score: ${p.data.scores.Score1 || 0}`;
 
-      d3.select('#currentLevels').text(textContent);
+      const el = document.getElementById('chartStatus');
+      if (el) el.textContent = textContent;
     }
 
     function computeMaxDepth(node) {

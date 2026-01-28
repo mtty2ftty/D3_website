@@ -4,28 +4,50 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Interactive ONS radial chart</title>
-    <link rel="stylesheet" href="https://raw.githubusercontent.com/mtty2ftty/D3_website/refs/heads/main/styles.css" />
+    <link rel="stylesheet" href="styles.css" />
   </head>
+
   <body>
-    <h1>Interactive ONS radial chart</h1>
-    <p>
-      This visualization represents a hierarchy, with each segment sized proportionally to its value and
-      color-coded by score.
-    </p>
-    <p>Segments further down the hierarchy can be clicked to explore the data.</p>
+    <div class="app">
+      <!-- 1/6 area (left): scrollable content column -->
+      <aside class="side-pane" aria-label="Page content">
+        <h1>Interactive ONS radial chart</h1>
+        <p>
+          This visualization represents a hierarchy, with each segment sized proportionally to its value and
+          color-coded by score.
+        </p>
+        <p>Segments further down the hierarchy can be clicked to explore the data.</p>
 
-    <div class="controls">
-      <label for="scoreSelector">Score:</label>
-      <select id="scoreSelector">
-        <option value="Score1">Score1</option>
-        <option value="Score2">Score2</option>
-      </select>
+        <div class="controls">
+          <label for="scoreSelector">Score:</label>
+          <select id="scoreSelector">
+            <option value="Score1">Score1</option>
+            <option value="Score2">Score2</option>
+          </select>
+        </div>
+
+        <!-- Put any other page content you want in this right-hand column -->
+        <div class="side-content">
+          <p style="margin-top: 24px; font-size: 12px; color: #666;">
+            Add your narrative, filters, notes, or supporting tables here — this panel scrolls independently.
+          </p>
+        </div>
+
+        <!-- Kept for backwards-compat with your original file (not currently used by the script) -->
+        <div id="my_dataviz" style="display:none;"></div>
+      </aside>
+
+      <!-- 5/6 area (right): fixed chart container -->
+      <div class="chart-pane" aria-label="Chart">
+        <div class="chart-overlay" aria-label="Chart legend and status">
+          <div id="chartStatus" class="chart-status">Currently showing levels 1 to 3</div>
+          <div id="chartLegend" class="chart-legend"></div>
+        </div>
+        <div id="chart"></div>
+      </div>
+
+      
     </div>
-
-    <div id="chart"></div>
-
-    <!-- Kept for backwards-compat with your original file (not currently used by the script) -->
-    <div id="my_dataviz"></div>
 
     <script src="https://d3js.org/d3.v6.js"></script>
     <script src="script.js"></script>

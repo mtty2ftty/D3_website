@@ -1,93 +1,124 @@
 /* ===============================
-   Base page layout & typography
+   Layout: 1/6 scrollable content (left) + 5/6 fixed chart (right)
    =============================== */
 
 html, body {
-  height: 100vh;
+  height: 100%;
   margin: 0;
-  overflow: hidden; /* 🔒 disables scrolling */
   padding: 0;
+
   background: #fafafa;
   color: #2b2b2b;
   font-family: 'Barlow', -apple-system, BlinkMacSystemFont,
     'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+  /* The side pane handles scrolling */
+  overflow: hidden;
+}
+
+.app {
+  display: grid;
+  grid-template-columns: max(400px, 22vw) 1fr; /* left pane min 300px */
+  height: 100vh;
+  width: 100vw;
+}
+
+/* Left area (5/6): chart stays fixed because this pane doesn't scroll */
+.chart-pane {
+  grid-column: 2;
+  position: relative;
+  overflow: hidden;
+
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Use full-width layout so the chart can truly centre in the viewport */
-body {
-  min-height: 100vh;
+/* Chart mount point */
+#chart {
+  width: 100%;
+  height: 100%;
+
   display: flex;
-  flex-direction: column;
-  line-height: 1.45;
+  align-items: center;
+  justify-content: center;
 }
 
-/* ===============================
-   Header / copy
-   =============================== */
-
-.page-header {
-  padding: 28px 24px 0;
+/* Responsive SVG sizing:
+   - centred
+   - square
+   - capped by 90% viewport height
+   - never exceeds container width/height
+*/
+#chart svg {
+  width: min(100%, 90vh);
+  height: min(100%, 90vh);
+  display: block;
 }
 
-.page-header__inner {
-  max-width: 1200px;
-  margin: 0 auto;
+/* Right area (1/6): independent scroller */
+.side-pane {
+  grid-column: 1;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding: 50px;
+  background: #ffffff;
+  border-left: 1px solid #e8e8e8;
+
+  /* ensure it visually sits above anything */
+  z-index: 2;
 }
 
 h1 {
-  font-size: 24px;
-  font-weight: 600;
+  font-size: 44px;
+  font-weight: 700;
   margin: 0 0 12px;
 }
 
 p {
-  font-size: 14px;
+  font-size: 16px;
   color: #555;
-  margin: 0 0 8px;
-  max-width: 720px;
+  margin: 0 0 10px;
+  line-height: 1.35;
+}
+
+.controls {
+  margin: 16px 0 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.controls label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+}
+
+.controls select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 13px;
 }
 
 /* ===============================
-   Main chart stage (centred + responsive)
-   =============================== */
-
-.page-main {
-  flex: 1;
-  display: flex;
-}
-
-#chart {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0px;
-}
-
-/* Responsive square SVG: scales with viewport, caps at 1000px logical design */
-#chart svg {
-  width: min(100vmin, 1200px);
-  height: min(100vmin, 1200px);
-  display: block;
-}
-
-/* ===============================
-   SVG & D3 elements
+   D3 / SVG styling
    =============================== */
 
 svg {
-  overflow: visible;
+  overflow: hidden;
   font-family: inherit;
+  font-size: 14px; /* overridden inline for responsive scaling */
 }
 
-/* Sunburst segments */
 path {
   transition: fill-opacity 200ms ease;
 }
 
-/* Clickable segments */
 path[style*="cursor: pointer"] {
   stroke: #ffffff;
   stroke-width: 0.5px;
@@ -97,22 +128,13 @@ path[style*="cursor: pointer"]:hover {
   fill-opacity: 0.85;
 }
 
-/* ===============================
-   Background depth rings
-   =============================== */
-
 .background-circle {
   fill: #FFFFFF;
   fill-opacity: 1;
-  
 }
 
-/* ===============================
-   Labels & centre text
-   =============================== */
-
 text {
-  font-size: 14px;
+  font-size: inherit;
   font-weight: 600;
   fill: #000;
   pointer-events: none;
@@ -122,70 +144,46 @@ text tspan {
   dominant-baseline: middle;
 }
 
-/* Central label */
-svg text:first-of-type {
-  font-size: 14px;
-  font-weight: 600;
-  fill: #000;
-}
-
-/* ===============================
-   Tooltips (SVG <title>)
-   =============================== */
-
 title {
   font-size: 12px;
 }
 
-/* ===============================
-   Utility / legacy classes
-   =============================== */
 
-.left   { text-align: left; }
-.center { text-align: center; }
-.right  { text-align: right; }
-
-.inline {
-  background-color: #f7f7f7;
-  border: 1px solid #b0b0b0;
+/* Chart overlay (status + legend) pinned to top-left of chart panel */
+.chart-pane {
+  position: relative;
 }
 
-.source {
-  background-color: #f5f5f5;
+.chart-overlay {
+  position: absolute;
+  top: 60px;
+  left: 50px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none; /* don't block chart interactions */
 }
 
-.warning {
-  font-weight: bold;
+.chart-status {
+  font-size: 16px;
+  color: #555;
+  line-height: 1.3;
 }
 
-.error {
-  font-weight: bold;
-  color: #c62828;
+.chart-legend {
+  font-size: 16px;
+  line-height: 1.4;
 }
 
-.message {
-  font-style: italic;
+.chart-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.source,
-.output,
-.warning,
-.error,
-.message {
-  padding: 0 1em;
-  border: 1px solid #f0f0f0;
+.chart-legend-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
 }
-
-/* ===============================
-   Syntax highlighting (if needed)
-   =============================== */
-
-.hl.num { color: #af0f91; }
-.hl.sng { color: #317ecc; }
-.hl.com { color: #ad95af; font-style: italic; }
-.hl.opt { color: #000; }
-.hl.def { color: #585858; }
-.hl.kwa { color: #295f94; font-weight: bold; }
-.hl.kwb { color: #b05a65; }
-.hl.kwc { color: #55aa55; }
-.hl.kwd { color: #bc5a65; font-weight: bold; }
