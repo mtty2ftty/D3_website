@@ -1,179 +1,234 @@
 /* ===============================
-   Layout: 1/6 scrollable content (left) + 5/6 fixed chart (right)
-   =============================== */
+   Base
+================================ */
+
+* {
+  box-sizing: border-box;
+}
 
 html, body {
   height: 100%;
+}
+
+body {
   margin: 0;
-  padding: 0;
-
-  background: #fafafa;
-  color: #2b2b2b;
-  font-family: 'Barlow', -apple-system, BlinkMacSystemFont,
-    'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-
-  /* The side pane handles scrolling */
-  overflow: hidden;
-}
-
-.app {
-  display: grid;
-  grid-template-columns: max(400px, 22vw) 1fr; /* left pane min 300px */
-  height: 100vh;
-  width: 100vw;
-}
-
-/* Left area (5/6): chart stays fixed because this pane doesn't scroll */
-.chart-pane {
-  grid-column: 2;
-  position: relative;
-  overflow: hidden;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Chart mount point */
-#chart {
-  width: 100%;
-  height: 100%;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Responsive SVG sizing:
-   - centred
-   - square
-   - capped by 90% viewport height
-   - never exceeds container width/height
-*/
-#chart svg {
-  width: min(100%, 90vh);
-  height: min(100%, 90vh);
-  display: block;
-}
-
-/* Right area (1/6): independent scroller */
-.side-pane {
-  grid-column: 1;
-  height: 100vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-
-  padding: 50px;
-  background: #ffffff;
-  border-left: 1px solid #e8e8e8;
-
-  /* ensure it visually sits above anything */
-  z-index: 2;
-}
-
-h1 {
-  font-size: 44px;
-  font-weight: 700;
-  margin: 0 0 12px;
-}
-
-p {
-  font-size: 16px;
-  color: #555;
-  margin: 0 0 10px;
-  line-height: 1.35;
-}
-
-.controls {
-  margin: 16px 0 8px;
-  display: grid;
-  gap: 8px;
-}
-
-.controls label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #333;
-}
-
-.controls select {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid #d9d9d9;
-  border-radius: 8px;
-  background: #fff;
-  font-size: 13px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 /* ===============================
-   D3 / SVG styling
-   =============================== */
+   App layout
+================================ */
 
-svg {
+.app {
+  display: grid;
+  grid-template-columns: clamp(300px, 33vw, 420px) 1fr;
+  height: 100vh;
   overflow: hidden;
-  font-family: inherit;
-  font-size: 14px; /* overridden inline for responsive scaling */
 }
 
-path {
-  transition: fill-opacity 200ms ease;
+/* ===============================
+   Left panel (logo + cards)
+================================ */
+
+.side-pane {
+  background: #131B5A;
+  color: #ffffff;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-path[style*="cursor: pointer"] {
-  stroke: #ffffff;
-  stroke-width: 0.5px;
+/* Ensure text is white */
+.side-pane,
+.side-pane * {
+  color: #ffffff;
 }
 
-path[style*="cursor: pointer"]:hover {
-  fill-opacity: 0.85;
+/* -------------------------------
+   Logo
+-------------------------------- */
+
+.side-logo {
+  flex: 0 0 auto;
+  width: 100px;
+  max-width: 70%;
+  margin: 0 0 18px 0;
 }
 
-.background-circle {
-  fill: #FFFFFF;
-  fill-opacity: 1;
+.side-logo svg {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
-text {
-  font-size: inherit;
-  font-weight: 600;
-  fill: #000;
-  pointer-events: none;
+/* -------------------------------
+   Card container
+-------------------------------- */
+
+.card-carousel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-text tspan {
-  dominant-baseline: middle;
+/* Card content scrolls */
+.card-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
-title {
-  font-size: 12px;
+/* Cards */
+.info-card {
+  display: none;
 }
 
+.info-card.active {
+  display: block;
+}
 
-/* Chart overlay (status + legend) pinned to top-left of chart panel */
+/* -------------------------------
+   Typography
+-------------------------------- */
+
+.side-pane h1 {
+  font-size: 36px;
+  line-height: 1.2;
+  margin: 0 0 16px 0;
+}
+
+.side-pane p {
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0 0 12px 0;
+}
+
+/* -------------------------------
+   Card navigation
+-------------------------------- */
+
+.card-nav {
+  flex: 0 0 auto;
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* Buttons */
+.card-nav button {
+  font-size: 13px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.card-nav button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.card-nav button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* Dots */
+.card-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.card-dot {
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.card-dot.active {
+  background: #ffffff;
+}
+
+/* ===============================
+   Chart panel (right)
+================================ */
+
 .chart-pane {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #ffffff;
 }
+
+#chart {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#chart svg {
+  max-width: 100%;
+  max-height: 90vh;
+  display: block;
+  overflow: hidden;
+}
+
+/* ===============================
+   Chart overlay (legend + dropdown)
+================================ */
 
 .chart-overlay {
   position: absolute;
-  top: 60px;
-  left: 50px;
+  top: 24px;
+  left: 24px;
   z-index: 10;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  pointer-events: none; /* don't block chart interactions */
+  pointer-events: none;
 }
 
 .chart-status {
-  font-size: 16px;
-  color: #555;
-  line-height: 1.3;
+  font-size: 12px;
+  color: #444;
 }
 
+/* Controls need pointer events */
+.chart-controls {
+  pointer-events: auto;
+}
+
+.chart-controls label {
+  font-size: 12px;
+  margin-bottom: 6px;
+  display: block;
+  color: #444;
+}
+
+.chart-controls select {
+  font-size: 12px;
+  padding: 6px 8px;
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #111;
+  border-radius: 0;
+}
+
+/* Legend */
 .chart-legend {
-  font-size: 16px;
+  font-size: 12px;
   line-height: 1.4;
+  color: #444;
 }
 
 .chart-legend-item {
@@ -185,5 +240,30 @@ title {
 .chart-legend-swatch {
   width: 10px;
   height: 10px;
-  border-radius: 2px;
+  flex: 0 0 10px;
+}
+
+/* Download buttons (bottom-right of chart panel) */
+.download-buttons {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+  gap: 10px;
+  z-index: 30;
+  pointer-events: auto;
+}
+
+.download-buttons button {
+  font-size: 12px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.download-buttons button:hover {
+  background: #f3f3f3;
 }
